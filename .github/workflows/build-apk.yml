@@ -39,7 +39,7 @@ jobs:
         run: flutter pub get
 
       - name: Generar ícono de la app (logo Kivox)
-        run: dart run flutter_launcher_icons
+        run: dart run flutter_launcher_icons:main || flutter pub run flutter_launcher_icons
 
       - name: Compilar APK (release)
         run: flutter build apk --release
