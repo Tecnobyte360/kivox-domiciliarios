@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api.dart';
 import '../main.dart';
@@ -69,25 +69,16 @@ class _ChatConvScreenState extends State<ChatConvScreen> {
     finally { if (mounted) setState(() => _enviando = false); }
   }
 
-  String _mime(String? ext, String tipo) {
-    final e = (ext ?? '').toLowerCase();
-    if (tipo == 'image') return e == 'png' ? 'image/png' : (e == 'webp' ? 'image/webp' : 'image/jpeg');
-    const map = {'pdf':'application/pdf','doc':'application/msword','docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','xls':'application/vnd.ms-excel','xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','mp3':'audio/mpeg','ogg':'audio/ogg','m4a':'audio/mp4'};
-    return map[e] ?? 'application/octet-stream';
-  }
-
-  Future<void> _adjuntar(String tipo) async {
+  Future<void> _foto(ImageSource source) async {
     try {
-      final res = await FilePicker.platform.pickFiles(
-        type: tipo == 'image' ? FileType.image : FileType.any,
-        withData: true,
-      );
-      if (res == null || res.files.isEmpty) return;
-      final f = res.files.first;
-      if (f.bytes == null) { _err('No se pudo leer el archivo.'); return; }
-      final dataUrl = 'data:${_mime(f.extension, tipo)};base64,${base64Encode(f.bytes!)}';
+      final x = await ImagePicker().pickImage(source: source, imageQuality: 80, maxWidth: 1600);
+      if (x == null) return;
+      final bytes = await x.readAsBytes();
+      final name = x.name.isNotEmpty ? x.name : 'foto.jpg';
+      final mime = name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      final dataUrl = 'data:$mime;base64,${base64Encode(bytes)}';
       setState(() => _enviando = true);
-      final m = await api.enviarMedia(widget.convId, dataUrl, tipo, f.name);
+      final m = await api.enviarMedia(widget.convId, dataUrl, 'image', name);
       setState(() => _msgs = [..._msgs, m]); _alFinal();
     } catch (e) { _err(e.toString().replaceFirst('Exception: ', '')); }
     finally { if (mounted) setState(() => _enviando = false); }
@@ -96,8 +87,8 @@ class _ChatConvScreenState extends State<ChatConvScreen> {
   void _menuAdjuntar() {
     showModalBottomSheet(context: context, builder: (_) => SafeArea(
       child: Wrap(children: [
-        ListTile(leading: const Icon(Icons.image, color: kBrand), title: const Text('Enviar foto'), onTap: () { Navigator.pop(context); _adjuntar('image'); }),
-        ListTile(leading: const Icon(Icons.insert_drive_file, color: kBrand), title: const Text('Enviar documento'), onTap: () { Navigator.pop(context); _adjuntar('document'); }),
+        ListTile(leading: const Icon(Icons.photo_library, color: kBrand), title: const Text('Foto de la galería'), onTap: () { Navigator.pop(context); _foto(ImageSource.gallery); }),
+        ListTile(leading: const Icon(Icons.photo_camera, color: kBrand), title: const Text('Tomar foto'), onTap: () { Navigator.pop(context); _foto(ImageSource.camera); }),
         ListTile(leading: const Icon(Icons.dashboard_customize, color: kBrand), title: const Text('Enviar plantilla'), onTap: () { Navigator.pop(context); _plantillas(); }),
       ]),
     ));
