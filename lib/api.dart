@@ -16,14 +16,12 @@ class KivoxApi {
         'Content-Type': 'application/json',
       };
 
-  /// Valida el token y devuelve los datos del domiciliario.
-  static Future<Map<String, dynamic>> login(String token) async {
+  /// Inicia sesión con usuario (email) y clave. Devuelve { token, domiciliario }.
+  static Future<Map<String, dynamic>> login(String email, String password) async {
     final r = await http.post(
       Uri.parse('$baseUrl/login'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+      headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
     ).timeout(const Duration(seconds: 20));
     final data = jsonDecode(r.body) as Map<String, dynamic>;
     if (r.statusCode == 200 && data['ok'] == true) return data;

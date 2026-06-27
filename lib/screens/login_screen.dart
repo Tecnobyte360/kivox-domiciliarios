@@ -11,14 +11,17 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _ctrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   bool _cargando = false;
+  bool _verPass = false;
   String? _error;
 
   Future<void> _entrar() async {
-    final token = _ctrl.text.trim();
-    if (token.isEmpty) {
-      setState(() => _error = 'Pega tu código de acceso.');
+    final email = _emailCtrl.text.trim();
+    final pass = _passCtrl.text;
+    if (email.isEmpty || pass.isEmpty) {
+      setState(() => _error = 'Escribe tu usuario y tu clave.');
       return;
     }
     setState(() {
@@ -26,7 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _error = null;
     });
     try {
-      await KivoxApi.login(token);
+      final data = await KivoxApi.login(email, pass);
+      final token = (data['token'] ?? '').toString();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
       if (!mounted) return;
@@ -50,20 +54,37 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('assets/logo.png', width: 160, height: 160),
-                const SizedBox(height: 8),
+                Image.asset('assets/logo.png', width: 150, height: 150),
                 const Text('Repartidores',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kBrand)),
                 const SizedBox(height: 6),
-                const Text('Ingresa con tu código de acceso',
+                const Text('Inicia sesión con tu usuario y clave',
                     style: TextStyle(color: Colors.black54)),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
                 TextField(
-                  controller: _ctrl,
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
                   decoration: InputDecoration(
-                    labelText: 'Código de acceso',
-                    hintText: 'Pega aquí tu código',
-                    prefixIcon: const Icon(Icons.key),
+                    labelText: 'Usuario (correo)',
+                    prefixIcon: const Icon(Icons.person),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _passCtrl,
+                  obscureText: !_verPass,
+                  onSubmitted: (_) => _entrar(),
+                  decoration: InputDecoration(
+                    labelText: 'Clave',
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(_verPass ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _verPass = !_verPass),
+                    ),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                     filled: true,
                     fillColor: Colors.white,
@@ -71,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  Text(_error!, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
                 ],
                 const SizedBox(height: 20),
                 SizedBox(
@@ -89,12 +110,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : const Text('Entrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Tu código es el que aparece al final del enlace que te envió el negocio (…/d/TU-CODIGO).',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black45, fontSize: 12),
                 ),
               ],
             ),

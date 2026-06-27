@@ -27,7 +27,9 @@ class _PedidosScreenState extends State<PedidosScreen> {
     super.initState();
     _cargar();
     _refrescoTimer = Timer.periodic(const Duration(seconds: 30), (_) => _cargar(silencioso: true));
-    _gpsTimer = Timer.periodic(const Duration(seconds: 45), (_) => _enviarUbicacion());
+    // 📍 GPS automático: pide permiso y empieza a enviar ubicación apenas entra,
+    // y luego cada 20s, sin que el domiciliario tenga que hacer nada.
+    _gpsTimer = Timer.periodic(const Duration(seconds: 20), (_) => _enviarUbicacion());
     _enviarUbicacion();
   }
 
@@ -142,7 +144,18 @@ class _PedidosScreenState extends State<PedidosScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis pedidos'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+              child: Image.asset('assets/logo.png', height: 26),
+            ),
+            const SizedBox(width: 8),
+            const Text('Repartidores'),
+          ],
+        ),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: () => _cargar()),
           IconButton(icon: const Icon(Icons.logout), onPressed: _salir),
