@@ -92,4 +92,30 @@ class MovilApi {
     if (r.statusCode == 200 && d['ok'] == true) return d['mensaje'] as Map<String, dynamic>;
     throw Exception(d['message'] ?? 'No se pudo enviar el mensaje.');
   }
+
+  /// Enviar foto/documento/audio. [dataUrl] = "data:<mime>;base64,...."
+  Future<Map<String, dynamic>> enviarMedia(int id, String dataUrl, String tipo, String filename, {String caption = ''}) async {
+    final r = await http.post(Uri.parse('$base/chat/conversaciones/$id/media'), headers: _h,
+        body: jsonEncode({'data': dataUrl, 'tipo': tipo, 'filename': filename, 'caption': caption}))
+        .timeout(const Duration(seconds: 90));
+    final d = jsonDecode(r.body);
+    if (r.statusCode == 200 && d['ok'] == true) return d['mensaje'] as Map<String, dynamic>;
+    throw Exception(d['message'] ?? 'No se pudo enviar el archivo.');
+  }
+
+  Future<List<dynamic>> plantillas() async {
+    final r = await http.get(Uri.parse('$base/chat/plantillas'), headers: _h)
+        .timeout(const Duration(seconds: 20));
+    final d = jsonDecode(r.body);
+    if (r.statusCode == 200 && d['ok'] == true) return d['plantillas'] as List;
+    throw Exception(d['message'] ?? 'No se pudieron cargar las plantillas.');
+  }
+
+  Future<void> enviarPlantilla(int id, String nombre, String idioma, List<String> variables) async {
+    final r = await http.post(Uri.parse('$base/chat/conversaciones/$id/plantilla'), headers: _h,
+        body: jsonEncode({'nombre': nombre, 'idioma': idioma, 'variables': variables}))
+        .timeout(const Duration(seconds: 30));
+    final d = jsonDecode(r.body);
+    if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo enviar la plantilla.');
+  }
 }
