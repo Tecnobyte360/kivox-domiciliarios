@@ -30,11 +30,19 @@ class KivoxApi {
     if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo iniciar la ruta.');
   }
 
-  Future<void> entregar(int pedidoId) async {
-    final r = await http.post(Uri.parse('$baseUrl/pedidos/$pedidoId/entregar'), headers: _headers)
-        .timeout(const Duration(seconds: 20));
+  Future<void> entregar(int pedidoId, {String? codigo, String? foto}) async {
+    final r = await http.post(Uri.parse('$baseUrl/pedidos/$pedidoId/entregar'), headers: _headers,
+        body: jsonEncode({if (codigo != null) 'codigo': codigo, if (foto != null) 'foto': foto}))
+        .timeout(const Duration(seconds: 60));
     final d = jsonDecode(r.body);
     if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo marcar como entregado.');
+  }
+
+  Future<void> noEntregar(int pedidoId, String motivo) async {
+    final r = await http.post(Uri.parse('$baseUrl/pedidos/$pedidoId/no-entregar'), headers: _headers,
+        body: jsonEncode({'motivo': motivo})).timeout(const Duration(seconds: 20));
+    final d = jsonDecode(r.body);
+    if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo registrar.');
   }
 
   Future<void> enviarUbicacion(double lat, double lng) async {
@@ -132,5 +140,13 @@ class MovilApi {
   Future<void> reaccionar(int mid, String emoji) async {
     await http.post(Uri.parse('$base/chat/mensajes/$mid/reaccion'), headers: _h,
         body: jsonEncode({'emoji': emoji})).timeout(const Duration(seconds: 15));
+  }
+
+  Future<List<dynamic>> respuestasRapidas() async {
+    final r = await http.get(Uri.parse('$base/chat/respuestas-rapidas'), headers: _h)
+        .timeout(const Duration(seconds: 15));
+    final d = jsonDecode(r.body);
+    if (r.statusCode == 200 && d['ok'] == true) return d['respuestas'] as List;
+    return [];
   }
 }

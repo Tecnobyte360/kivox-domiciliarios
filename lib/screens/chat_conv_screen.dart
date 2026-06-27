@@ -109,9 +109,30 @@ class _ChatConvScreenState extends State<ChatConvScreen> {
       child: Wrap(children: [
         ListTile(leading: const Icon(Icons.photo_library, color: waTeal), title: const Text('Foto de la galería'), onTap: () { Navigator.pop(context); _foto(ImageSource.gallery); }),
         ListTile(leading: const Icon(Icons.photo_camera, color: waTeal), title: const Text('Cámara'), onTap: () { Navigator.pop(context); _foto(ImageSource.camera); }),
+        ListTile(leading: const Icon(Icons.bolt, color: waTeal), title: const Text('Respuesta rápida'), onTap: () { Navigator.pop(context); _respuestasRapidas(); }),
         ListTile(leading: const Icon(Icons.dashboard_customize, color: waTeal), title: const Text('Plantilla'), onTap: () { Navigator.pop(context); _plantillas(); }),
       ]),
     ));
+  }
+
+  Future<void> _respuestasRapidas() async {
+    try {
+      final rs = await api.respuestasRapidas();
+      if (!mounted) return;
+      if (rs.isEmpty) { _err('No tienes respuestas rápidas configuradas.'); return; }
+      showModalBottomSheet(context: context, isScrollControlled: true, builder: (_) => DraggableScrollableSheet(
+        expand: false, initialChildSize: 0.5, maxChildSize: 0.9,
+        builder: (_, ctrl) => ListView(controller: ctrl, children: [
+          const Padding(padding: EdgeInsets.all(14), child: Text('Respuestas rápidas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+          ...rs.map((q) => ListTile(
+            leading: const Icon(Icons.bolt, color: waTeal),
+            title: Text((q['atajo'] ?? 'Respuesta').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text((q['texto'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+            onTap: () { Navigator.pop(context); _input.text = (q['texto'] ?? '').toString(); },
+          )),
+        ]),
+      ));
+    } catch (e) { _err(e.toString().replaceFirst('Exception: ', '')); }
   }
 
   Future<void> _plantillas() async {
