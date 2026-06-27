@@ -1,0 +1,57 @@
+name: Build APK Kivox Repartidores
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Generar plataforma Android
+        run: flutter create --platforms=android --project-name kivox_domiciliarios .
+
+      - name: Agregar permisos (Internet + ubicación)
+        run: |
+          MF=android/app/src/main/AndroidManifest.xml
+          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>\n    <application|' "$MF"
+          echo "----- Manifest -----"; cat "$MF"
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Compilar APK (release)
+        run: flutter build apk --release
+
+      - name: Subir APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivox-domiciliarios-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publicar APK en un Release (descarga fácil)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Kivox Repartidores (build ${{ github.run_number }})
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
