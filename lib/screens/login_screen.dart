@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api.dart';
 import '../main.dart';
-import 'pedidos_screen.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,19 +24,21 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _error = 'Escribe tu usuario y tu clave.');
       return;
     }
-    setState(() {
-      _cargando = true;
-      _error = null;
-    });
+    setState(() { _cargando = true; _error = null; });
     try {
-      final data = await KivoxApi.login(email, pass);
-      final token = (data['token'] ?? '').toString();
+      final data = await MovilApi.login(email, pass);
+      final user = (data['user'] ?? {}) as Map<String, dynamic>;
+      final perm = (user['permisos'] ?? {}) as Map<String, dynamic>;
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
+      await prefs.setString('movil_token', (data['token'] ?? '').toString());
+      await prefs.setString('user_nombre', (user['nombre'] ?? '').toString());
+      await prefs.setString('user_negocio', (user['negocio'] ?? '').toString());
+      await prefs.setBool('perm_chat', perm['chat'] == true);
+      await prefs.setBool('perm_pedidos', perm['pedidos'] == true);
+      await prefs.setBool('es_domiciliario', user['es_domiciliario'] == true);
+      await prefs.setString('domiciliario_token', (user['domiciliario_token'] ?? '').toString());
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => PedidosScreen(token: token)),
-      );
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -55,11 +57,9 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.asset('assets/logo.png', width: 150, height: 150),
-                const Text('Repartidores',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kBrand)),
-                const SizedBox(height: 6),
-                const Text('Inicia sesión con tu usuario y clave',
-                    style: TextStyle(color: Colors.black54)),
+                const Text('Kivox', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: kBrand)),
+                const SizedBox(height: 4),
+                const Text('Inicia sesión con tu usuario y clave', style: TextStyle(color: Colors.black54)),
                 const SizedBox(height: 24),
                 TextField(
                   controller: _emailCtrl,
@@ -69,8 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     labelText: 'Usuario (correo)',
                     prefixIcon: const Icon(Icons.person),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                    filled: true,
-                    fillColor: Colors.white,
+                    filled: true, fillColor: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -86,8 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () => setState(() => _verPass = !_verPass),
                     ),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                    filled: true,
-                    fillColor: Colors.white,
+                    filled: true, fillColor: Colors.white,
                   ),
                 ),
                 if (_error != null) ...[
@@ -96,8 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
                 const SizedBox(height: 20),
                 SizedBox(
-                  width: double.infinity,
-                  height: 52,
+                  width: double.infinity, height: 52,
                   child: FilledButton(
                     onPressed: _cargando ? null : _entrar,
                     style: FilledButton.styleFrom(
@@ -105,9 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: _cargando
-                        ? const SizedBox(
-                            width: 22, height: 22,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : const Text('Entrar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),

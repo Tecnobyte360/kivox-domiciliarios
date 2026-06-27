@@ -129,10 +129,10 @@ class _PedidosScreenState extends State<PedidosScreen> {
 
   Future<void> _salir() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
+    await prefs.clear();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()));
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()), (r) => false);
   }
 
   @override
