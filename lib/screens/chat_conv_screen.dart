@@ -163,6 +163,27 @@ class _ChatConvScreenState extends State<ChatConvScreen> {
     try { await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication); } catch (_) {}
   }
 
+  void _menuReaccion(Map<String, dynamic> m) {
+    const emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+    showModalBottomSheet(context: context, builder: (_) => SafeArea(child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+        ...emojis.map((e) => GestureDetector(
+          onTap: () { Navigator.pop(context); _reaccionar(m, m['reaccion'] == e ? '' : e); },
+          child: Text(e, style: const TextStyle(fontSize: 30)),
+        )),
+        GestureDetector(onTap: () { Navigator.pop(context); _reaccionar(m, ''); },
+          child: const Icon(Icons.do_not_disturb_alt, size: 28, color: Colors.black38)),
+      ]),
+    )));
+  }
+
+  Future<void> _reaccionar(Map<String, dynamic> m, String emoji) async {
+    setState(() => m['reaccion'] = emoji.isEmpty ? null : emoji);
+    try { await api.reaccionar(m['id'] as int, emoji); }
+    catch (e) { _err(e.toString().replaceFirst('Exception: ', '')); }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -248,33 +269,55 @@ class _ChatConvScreenState extends State<ChatConvScreen> {
       cuerpo = Text(texto, style: const TextStyle(fontSize: 15, color: Color(0xFF111B21)));
     }
 
-    return Align(
-      alignment: mio ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
-        padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.80),
-        decoration: BoxDecoration(
-          color: mio ? waBubbleOut : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(10),
-            topRight: const Radius.circular(10),
-            bottomLeft: Radius.circular(mio ? 10 : 2),
-            bottomRight: Radius.circular(mio ? 2 : 10),
-          ),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 1, offset: const Offset(0, 1))],
+    final reaccion = m['reaccion']?.toString();
+
+    final bubble = Container(
+      margin: const EdgeInsets.only(top: 2, left: 2, right: 2),
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.80),
+      decoration: BoxDecoration(
+        color: mio ? waBubbleOut : Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(10),
+          topRight: const Radius.circular(10),
+          bottomLeft: Radius.circular(mio ? 10 : 2),
+          bottomRight: Radius.circular(mio ? 2 : 10),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          cuerpo,
-          const SizedBox(height: 2),
-          Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.end, children: [
-            Text(hora, style: const TextStyle(fontSize: 10.5, color: Colors.black45)),
-            if (mio) ...[
-              const SizedBox(width: 3),
-              const Icon(Icons.done_all, size: 14, color: Color(0xFF53BDEB)),
-            ],
-          ]),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 1, offset: const Offset(0, 1))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+        cuerpo,
+        const SizedBox(height: 2),
+        Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.end, children: [
+          Text(hora, style: const TextStyle(fontSize: 10.5, color: Colors.black45)),
+          if (mio) ...[
+            const SizedBox(width: 3),
+            const Icon(Icons.done_all, size: 14, color: Color(0xFF53BDEB)),
+          ],
         ]),
+      ]),
+    );
+
+    return GestureDetector(
+      onLongPress: () => _menuReaccion(m),
+      child: Align(
+        alignment: mio ? Alignment.centerRight : Alignment.centerLeft,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: (reaccion != null && reaccion.isNotEmpty) ? 12 : 0),
+          child: Stack(clipBehavior: Clip.none, children: [
+            bubble,
+            if (reaccion != null && reaccion.isNotEmpty)
+              Positioned(
+                bottom: -10, right: mio ? 8 : null, left: mio ? null : 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 2)]),
+                  child: Text(reaccion, style: const TextStyle(fontSize: 14)),
+                ),
+              ),
+          ]),
+        ),
       ),
     );
   }

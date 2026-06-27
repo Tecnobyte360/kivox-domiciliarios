@@ -40,8 +40,31 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   List<dynamic> get _filtradas {
-    if (_filtro == 'no_leidos') return _convs.where((c) => ((c['no_leidos'] ?? 0) as int) > 0).toList();
+    if (_filtro == 'no_leidos') return _convs.where((c) => ((c['no_leidos'] ?? 0) as int) > 0 || c['no_leida'] == true).toList();
+    if (_filtro == 'favoritos') return _convs.where((c) => c['favorito'] == true).toList();
     return _convs;
+  }
+
+  Future<void> _accionesConv(Map<String, dynamic> c) async {
+    final fav = c['favorito'] == true;
+    showModalBottomSheet(context: context, builder: (_) => SafeArea(child: Wrap(children: [
+      Padding(padding: const EdgeInsets.all(14), child: Text((c['nombre'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+      ListTile(
+        leading: Icon(fav ? Icons.star : Icons.star_border, color: const Color(0xFFF5B400)),
+        title: Text(fav ? 'Quitar de favoritos' : 'Marcar como favorito'),
+        onTap: () async { Navigator.pop(context); try { await api.favorito(c['id'] as int, !fav); } catch (_) {} _cargar(silencioso: true); },
+      ),
+      ListTile(
+        leading: const Icon(Icons.mark_chat_unread, color: Color(0xFF25D366)),
+        title: const Text('Marcar como no leído'),
+        onTap: () async { Navigator.pop(context); try { await api.marcarNoLeida(c['id'] as int, true); } catch (_) {} _cargar(silencioso: true); },
+      ),
+      ListTile(
+        leading: const Icon(Icons.done_all, color: Colors.black54),
+        title: const Text('Marcar como leído'),
+        onTap: () async { Navigator.pop(context); try { await api.marcarNoLeida(c['id'] as int, false); } catch (_) {} _cargar(silencioso: true); },
+      ),
+    ])));
   }
 
   int get _totalNoLeidos => _convs.fold(0, (s, c) => s + ((c['no_leidos'] ?? 0) as int));
@@ -98,6 +121,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   _chip('Todos', 'todos'),
                   const SizedBox(width: 8),
                   _chip('No leídos${_totalNoLeidos > 0 ? '  $_totalNoLeidos' : ''}', 'no_leidos'),
+                  const SizedBox(width: 8),
+                  _chip('Favoritos', 'favoritos'),
                 ],
               ))),
               const SliverToBoxAdapter(child: SizedBox(height: 6)),
@@ -136,11 +161,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Widget _item(Map<String, dynamic> c) {
     final noLeidos = (c['no_leidos'] ?? 0) as int;
+    final noLeida = c['no_leida'] == true;
+    final fav = c['favorito'] == true;
     final nombre = (c['nombre'] ?? 'Cliente').toString();
     final mio = c['ultimo_mio'] == true;
     final ultimo = (c['ultimo'] ?? '').toString();
+    final badge = noLeidos > 0 ? noLeidos : (noLeida ? 1 : 0);
 
     return InkWell(
+      onLongPress: () => _accionesConv(c),
       onTap: () => Navigator.push(context, MaterialPageRoute(
         builder: (_) => ChatConvScreen(token: widget.token, convId: c['id'] as int, nombre: nombre),
       )).then((_) => _cargar(silencioso: true)),
@@ -153,19 +182,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text(nombre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16.5))),
-              Text(_hora(c['ultimo_at']), style: TextStyle(fontSize: 12, color: noLeidos > 0 ? waUnread : Colors.black45)),
+              Text(_hora(c['ultimo_at']), style: TextStyle(fontSize: 12, color: badge > 0 ? waUnread : Colors.black45)),
             ]),
             const SizedBox(height: 3),
             Row(children: [
               if (mio) const Padding(padding: EdgeInsets.only(right: 3), child: Icon(Icons.done_all, size: 16, color: Color(0xFF53BDEB))),
-              Expanded(child: Text(ultimo, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black54, fontSize: 14))),
-              if (noLeidos > 0) Container(
-                margin: const EdgeInsets.only(left: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-                decoration: BoxDecoration(color: waUnread, borderRadius: BorderRadius.circular(12)),
-                constraints: const BoxConstraints(minWidth: 20),
-                child: Text('$noLeidos', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
+              Expanded(child: Text(ultimo, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.black54, fontSize: 14, fontWeight: badge > 0 ? FontWeight.w600 : FontWeight.normal))),
+              if (fav) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.star, size: 16, color: Color(0xFFF5B400))),
+              if (noLeidos > 0)
+                Container(
+                  margin: const EdgeInsets.only(left: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                  decoration: BoxDecoration(color: waUnread, borderRadius: BorderRadius.circular(12)),
+                  constraints: const BoxConstraints(minWidth: 20),
+                  child: Text('$noLeidos', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                )
+              else if (noLeida)
+                Container(margin: const EdgeInsets.only(left: 6), width: 12, height: 12, decoration: const BoxDecoration(color: waUnread, shape: BoxShape.circle)),
             ]),
           ])),
         ]),

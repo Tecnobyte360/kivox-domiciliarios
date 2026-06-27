@@ -118,4 +118,19 @@ class MovilApi {
     final d = jsonDecode(r.body);
     if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo enviar la plantilla.');
   }
+
+  Future<void> favorito(int id, bool valor) async {
+    await http.post(Uri.parse('$base/chat/conversaciones/$id/favorito'), headers: _h,
+        body: jsonEncode({'valor': valor})).timeout(const Duration(seconds: 15));
+  }
+
+  Future<void> marcarNoLeida(int id, bool valor) async {
+    await http.post(Uri.parse('$base/chat/conversaciones/$id/no-leida'), headers: _h,
+        body: jsonEncode({'valor': valor})).timeout(const Duration(seconds: 15));
+  }
+
+  Future<void> reaccionar(int mid, String emoji) async {
+    await http.post(Uri.parse('$base/chat/mensajes/$mid/reaccion'), headers: _h,
+        body: jsonEncode({'emoji': emoji})).timeout(const Duration(seconds: 15));
+  }
 }
