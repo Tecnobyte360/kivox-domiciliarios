@@ -19,13 +19,12 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
 
-# Ícono de la app = logo Kivox
+# Ícono de la app = logo Kivox (solo Android: el APK no compila iOS)
 flutter_launcher_icons:
   android: "ic_launcher"
-  ios: true
+  ios: false
   image_path: "assets/logo.png"
   min_sdk_android: 21
-  background_color_ios: "#FFFFFF"
 
 flutter:
   uses-material-design: true
