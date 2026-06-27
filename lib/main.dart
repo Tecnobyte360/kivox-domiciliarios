@@ -5,8 +5,9 @@ import 'screens/pedidos_screen.dart';
 
 void main() => runApp(const KivoxApp());
 
-// Color de marca Kivox
-const kBrand = Color(0xFF7C3AED);
+// Colores de marca Kivox (verde del logo)
+const kBrand = Color(0xFF2E9E5B);       // verde Kivox principal
+const kBrandDark = Color(0xFF1B7A44);   // verde oscuro (degradados)
 
 class KivoxApp extends StatelessWidget {
   const KivoxApp({super.key});

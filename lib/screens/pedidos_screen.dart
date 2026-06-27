@@ -184,7 +184,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [kBrand, Color(0xFF6D28D9)]),
+        gradient: const LinearGradient(colors: [kBrand, kBrandDark]),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(

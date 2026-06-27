@@ -50,18 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 84,
-                  height: 84,
-                  decoration: BoxDecoration(
-                    color: kBrand,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Icon(Icons.motorcycle, color: Colors.white, size: 44),
-                ),
-                const SizedBox(height: 20),
-                const Text('Kivox Repartidores',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                Image.asset('assets/logo.png', width: 160, height: 160),
+                const SizedBox(height: 8),
+                const Text('Repartidores',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kBrand)),
                 const SizedBox(height: 6),
                 const Text('Ingresa con tu código de acceso',
                     style: TextStyle(color: Colors.black54)),
