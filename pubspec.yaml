@@ -1,7 +1,7 @@
-﻿name: kivox_domiciliarios
-description: Kivox Repartidores â€” app para domiciliarios (iniciar/finalizar ruta, cÃ³digo de entrega, GPS).
+name: kivox_domiciliarios
+description: Kivox Repartidores ??? app para domiciliarios (iniciar/finalizar ruta, c??digo de entrega, GPS).
 publish_to: 'none'
-version: 1.3.0+6
+version: 1.3.1+7
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -20,7 +20,7 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
 
-# Ãcono de la app = logo Kivox (solo Android: el APK no compila iOS)
+# ??cono de la app = logo Kivox (solo Android: el APK no compila iOS)
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: false
@@ -31,3 +31,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo.png
+

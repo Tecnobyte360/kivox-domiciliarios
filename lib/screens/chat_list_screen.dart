@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../api.dart';
-import 'chat_conv_screen.dart'; // waGreen, waTeal, ChatConvScreen
+import 'chat_conv_screen.dart'; // waTeal, ChatConvScreen
+
+const waUnread = Color(0xFF25D366);
 
 class ChatListScreen extends StatefulWidget {
   final String token;
@@ -15,8 +17,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   final _busqueda = TextEditingController();
   List<dynamic> _convs = [];
   bool _cargando = true;
-  bool _buscando = false;
-  String? _error;
+  String _filtro = 'todos'; // todos | no_leidos
   Timer? _timer;
 
   @override
@@ -34,12 +35,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
     try {
       final c = await api.conversaciones(q: _busqueda.text.trim());
       if (!mounted) return;
-      setState(() { _convs = c; _error = null; _cargando = false; });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() { _error = e.toString().replaceFirst('Exception: ', ''); _cargando = false; });
-    }
+      setState(() { _convs = c; _cargando = false; });
+    } catch (_) { if (mounted) setState(() => _cargando = false); }
   }
+
+  List<dynamic> get _filtradas {
+    if (_filtro == 'no_leidos') return _convs.where((c) => ((c['no_leidos'] ?? 0) as int) > 0).toList();
+    return _convs;
+  }
+
+  int get _totalNoLeidos => _convs.fold(0, (s, c) => s + ((c['no_leidos'] ?? 0) as int));
 
   String _hora(dynamic iso) {
     try {
@@ -47,8 +52,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
       final ahora = DateTime.now();
       if (d.year == ahora.year && d.month == ahora.month && d.day == ahora.day) {
         final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
-        return '$h:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'a.m.' : 'p.m.'}';
+        return '$h:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'a. m.' : 'p. m.'}';
       }
+      const dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+      if (ahora.difference(d).inDays < 7) return dias[d.weekday - 1];
       return '${d.day}/${d.month}/${d.year % 100}';
     } catch (_) { return ''; }
   }
@@ -57,67 +64,112 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: waGreen,
-        title: _buscando
-            ? TextField(
-                controller: _busqueda, autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                cursorColor: Colors.white,
-                onChanged: (_) => _cargar(silencioso: true),
-                decoration: const InputDecoration(hintText: 'Buscar…', hintStyle: TextStyle(color: Colors.white70), border: InputBorder.none),
-              )
-            : const Text('Chats'),
-        actions: [
-          IconButton(
-            icon: Icon(_buscando ? Icons.close : Icons.search),
-            onPressed: () => setState(() { _buscando = !_buscando; if (!_buscando) { _busqueda.clear(); _cargar(silencioso: true); } }),
-          ),
-        ],
-      ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _cargar,
-              child: _convs.isEmpty
-                  ? ListView(children: [
-                      if (_error != null) Padding(padding: const EdgeInsets.all(16), child: Text(_error!, style: const TextStyle(color: Colors.red))),
-                      const SizedBox(height: 120),
-                      const Center(child: Text('Sin conversaciones', style: TextStyle(color: Colors.black45))),
-                    ])
-                  : ListView.separated(
-                      itemCount: _convs.length,
-                      separatorBuilder: (_, __) => const Padding(padding: EdgeInsets.only(left: 82), child: Divider(height: 1)),
-                      itemBuilder: (_, i) {
-                        final c = _convs[i] as Map<String, dynamic>;
-                        final noLeidos = (c['no_leidos'] ?? 0) as int;
-                        final nombre = (c['nombre'] ?? 'Cliente').toString();
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          leading: CircleAvatar(radius: 27, backgroundColor: const Color(0xFFB9E0D0),
-                            child: Text(_ini(nombre), style: const TextStyle(color: waGreen, fontWeight: FontWeight.bold, fontSize: 16))),
-                          title: Text(nombre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                          subtitle: Text((c['ultimo'] ?? '').toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black54)),
-                          trailing: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-                            Text(_hora(c['ultimo_at']), style: TextStyle(fontSize: 11.5, color: noLeidos > 0 ? waTeal : Colors.black45, fontWeight: noLeidos > 0 ? FontWeight.bold : FontWeight.normal)),
-                            const SizedBox(height: 5),
-                            if (noLeidos > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(color: const Color(0xFF25D366), borderRadius: BorderRadius.circular(12)),
-                                constraints: const BoxConstraints(minWidth: 20),
-                                child: Text('$noLeidos', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.bold)),
-                              )
-                            else
-                              const SizedBox(height: 18),
-                          ]),
-                          onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => ChatConvScreen(token: widget.token, convId: c['id'] as int, nombre: nombre),
-                          )).then((_) => _cargar(silencioso: true)),
-                        );
-                      },
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _cargar,
+          child: CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 14, 16, 6),
+                child: Text('Chats', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+              )),
+              // Buscador
+              SliverToBoxAdapter(child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Container(
+                  decoration: BoxDecoration(color: const Color(0xFFF0F2F5), borderRadius: BorderRadius.circular(12)),
+                  child: TextField(
+                    controller: _busqueda,
+                    onChanged: (_) => _cargar(silencioso: true),
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar',
+                      prefixIcon: Icon(Icons.search, color: Colors.black45),
+                      border: InputBorder.none, isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 12),
                     ),
-            ),
+                  ),
+                ),
+              )),
+              // Chips
+              SliverToBoxAdapter(child: SizedBox(height: 40, child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  _chip('Todos', 'todos'),
+                  const SizedBox(width: 8),
+                  _chip('No leídos${_totalNoLeidos > 0 ? '  $_totalNoLeidos' : ''}', 'no_leidos'),
+                ],
+              ))),
+              const SliverToBoxAdapter(child: SizedBox(height: 6)),
+              if (_cargando)
+                const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+              else if (_filtradas.isEmpty)
+                const SliverFillRemaining(hasScrollBody: false, child: Center(child: Text('Sin conversaciones', style: TextStyle(color: Colors.black45))))
+              else
+                SliverList(delegate: SliverChildBuilderDelegate(
+                  (_, i) => _item(_filtradas[i] as Map<String, dynamic>),
+                  childCount: _filtradas.length,
+                )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String label, String val) {
+    final sel = _filtro == val;
+    return GestureDetector(
+      onTap: () => setState(() => _filtro = val),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: sel ? const Color(0xFFD8F5D3) : const Color(0xFFF0F2F5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: sel ? const Color(0xFF25D366) : Colors.transparent),
+        ),
+        child: Text(label, style: TextStyle(color: sel ? const Color(0xFF1A7F3C) : Colors.black87, fontWeight: FontWeight.w600, fontSize: 13.5)),
+      ),
+    );
+  }
+
+  Widget _item(Map<String, dynamic> c) {
+    final noLeidos = (c['no_leidos'] ?? 0) as int;
+    final nombre = (c['nombre'] ?? 'Cliente').toString();
+    final mio = c['ultimo_mio'] == true;
+    final ultimo = (c['ultimo'] ?? '').toString();
+
+    return InkWell(
+      onTap: () => Navigator.push(context, MaterialPageRoute(
+        builder: (_) => ChatConvScreen(token: widget.token, convId: c['id'] as int, nombre: nombre),
+      )).then((_) => _cargar(silencioso: true)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+        child: Row(children: [
+          CircleAvatar(radius: 28, backgroundColor: const Color(0xFFB9E0D0),
+            child: Text(_ini(nombre), style: const TextStyle(color: Color(0xFF075E54), fontWeight: FontWeight.bold, fontSize: 17))),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: Text(nombre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16.5))),
+              Text(_hora(c['ultimo_at']), style: TextStyle(fontSize: 12, color: noLeidos > 0 ? waUnread : Colors.black45)),
+            ]),
+            const SizedBox(height: 3),
+            Row(children: [
+              if (mio) const Padding(padding: EdgeInsets.only(right: 3), child: Icon(Icons.done_all, size: 16, color: Color(0xFF53BDEB))),
+              Expanded(child: Text(ultimo, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black54, fontSize: 14))),
+              if (noLeidos > 0) Container(
+                margin: const EdgeInsets.only(left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                decoration: BoxDecoration(color: waUnread, borderRadius: BorderRadius.circular(12)),
+                constraints: const BoxConstraints(minWidth: 20),
+                child: Text('$noLeidos', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ]),
+          ])),
+        ]),
+      ),
     );
   }
 
