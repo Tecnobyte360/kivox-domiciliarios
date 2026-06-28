@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "266988886190",
+    "project_id": "kivox-949dc",
+    "storage_bucket": "kivox-949dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:266988886190:android:a2f95fd05ce727ecc4753f",
+        "android_client_info": {
+          "package_name": "co.kivox.repartidores"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyWgeiaSmod0CZVNKa6Q5zypJGG7XfJ6A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -142,6 +142,14 @@ class MovilApi {
         body: jsonEncode({'emoji': emoji})).timeout(const Duration(seconds: 15));
   }
 
+  Future<void> registrarDeviceToken(String fcmToken) async {
+    try {
+      await http.post(Uri.parse('$base/device-token'), headers: _h,
+          body: jsonEncode({'token': fcmToken, 'plataforma': 'android'}))
+          .timeout(const Duration(seconds: 15));
+    } catch (_) {}
+  }
+
   Future<List<dynamic>> respuestasRapidas() async {
     final r = await http.get(Uri.parse('$base/chat/respuestas-rapidas'), headers: _h)
         .timeout(const Duration(seconds: 15));

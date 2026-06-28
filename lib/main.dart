@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
-void main() => runApp(const KivoxApp());
+/// Handler de notificaciones cuando la app está en segundo plano / cerrada.
+@pragma('vm:entry-point')
+Future<void> _firebaseBgHandler(RemoteMessage message) async {
+  // El sistema muestra la notificación automáticamente (payload "notification").
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(_firebaseBgHandler);
+  } catch (_) {/* si Firebase no está configurado, la app sigue funcionando */}
+  runApp(const KivoxApp());
+}
 
 // Colores de marca Kivox (verde del logo)
 const kBrand = Color(0xFF2E9E5B);

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../api.dart';
 import '../main.dart';
 import 'login_screen.dart';
 import 'chat_list_screen.dart';
@@ -37,6 +39,21 @@ class _HomeScreenState extends State<HomeScreen> {
       _domiToken = p.getString('domiciliario_token') ?? '';
       _cargando = false;
     });
+    _registrarPush();
+  }
+
+  // 🔔 Pide permiso de notificaciones, obtiene el token FCM y lo registra en el servidor.
+  Future<void> _registrarPush() async {
+    if (_movilToken.isEmpty) return;
+    try {
+      final fm = FirebaseMessaging.instance;
+      await fm.requestPermission(alert: true, badge: true, sound: true);
+      final token = await fm.getToken();
+      if (token != null && token.isNotEmpty) {
+        await MovilApi(_movilToken).registrarDeviceToken(token);
+      }
+      fm.onTokenRefresh.listen((t) => MovilApi(_movilToken).registrarDeviceToken(t));
+    } catch (_) {/* silencioso */}
   }
 
   Future<void> _salir() async {
