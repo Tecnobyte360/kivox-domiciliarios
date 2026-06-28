@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api.dart';
+import '../location_service.dart';
 import '../main.dart';
 import 'login_screen.dart';
 import 'chat_list_screen.dart';
@@ -57,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _salir() async {
+    await LocationService.detener();
     final p = await SharedPreferences.getInstance();
     await p.clear();
     if (!mounted) return;

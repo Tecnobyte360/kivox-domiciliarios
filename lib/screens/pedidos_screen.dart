@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api.dart';
+import '../location_service.dart';
 import '../main.dart';
 import 'login_screen.dart';
 
@@ -22,23 +22,22 @@ class _PedidosScreenState extends State<PedidosScreen> {
   String? _error;
   Map<String, dynamic> _data = {};
   Timer? _refrescoTimer;
-  Timer? _gpsTimer;
 
   @override
   void initState() {
     super.initState();
     _cargar();
     _refrescoTimer = Timer.periodic(const Duration(seconds: 30), (_) => _cargar(silencioso: true));
-    // 📍 GPS automático: pide permiso y empieza a enviar ubicación apenas entra,
-    // y luego cada 20s, sin que el domiciliario tenga que hacer nada.
-    _gpsTimer = Timer.periodic(const Duration(seconds: 20), (_) => _enviarUbicacion());
-    _enviarUbicacion();
+    // 📍 Rastreo en segundo plano: notificación fija + ubicación cada 20s,
+    // sigue aunque la app esté minimizada o con la pantalla apagada.
+    LocationService.iniciar(widget.token);
   }
 
   @override
   void dispose() {
     _refrescoTimer?.cancel();
-    _gpsTimer?.cancel();
+    // OJO: NO detenemos el rastreo aquí a propósito, para que siga en segundo
+    // plano al salir de esta pantalla. Se detiene solo al cerrar sesión.
     super.dispose();
   }
 
@@ -59,18 +58,6 @@ class _PedidosScreenState extends State<PedidosScreen> {
         _cargando = false;
       });
     }
-  }
-
-  Future<void> _enviarUbicacion() async {
-    try {
-      LocationPermission p = await Geolocator.checkPermission();
-      if (p == LocationPermission.denied) p = await Geolocator.requestPermission();
-      if (p == LocationPermission.denied || p == LocationPermission.deniedForever) return;
-      final pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 12));
-      await api.enviarUbicacion(pos.latitude, pos.longitude);
-    } catch (_) {/* silencioso */}
   }
 
   Future<void> _confirmar({
@@ -233,6 +220,7 @@ class _PedidosScreenState extends State<PedidosScreen> {
   }
 
   Future<void> _salir() async {
+    await LocationService.detener();
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     if (!mounted) return;
