@@ -55,6 +55,31 @@ jobs:
           cp google-services.json android/app/google-services.json
           echo "----- app build.gradle(.kts) -----"; cat "$APP"
 
+      - name: Firma de lanzamiento (upload key) para Play Store
+        run: |
+          set -e
+          cp keystore/upload-keystore.jks android/app/upload-keystore.jks
+          cat > android/key.properties <<'EOF'
+          storePassword=KivoxUpload2026
+          keyPassword=KivoxUpload2026
+          keyAlias=upload
+          storeFile=upload-keystore.jks
+          EOF
+          APP=android/app/build.gradle.kts
+          if [ -f "$APP" ]; then
+            sed -i '1i import java.util.Properties' "$APP"
+            sed -i '1i import java.io.FileInputStream' "$APP"
+            sed -i 's|^android {|val keystoreProperties = Properties()\nval keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) {\n    keystoreProperties.load(FileInputStream(keystorePropertiesFile))\n}\n\nandroid {|' "$APP"
+            sed -i 's|buildTypes {|signingConfigs {\n        create("release") {\n            keyAlias = keystoreProperties["keyAlias"] as String\n            keyPassword = keystoreProperties["keyPassword"] as String\n            storeFile = file(keystoreProperties["storeFile"] as String)\n            storePassword = keystoreProperties["storePassword"] as String\n        }\n    }\n\n    buildTypes {|' "$APP"
+            sed -i 's|signingConfigs.getByName("debug")|signingConfigs.getByName("release")|' "$APP"
+          else
+            APP=android/app/build.gradle
+            sed -i '1i def keystoreProperties = new Properties()\ndef keystorePropertiesFile = rootProject.file("key.properties")\nif (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }' "$APP"
+            sed -i 's|buildTypes {|signingConfigs {\n        release {\n            keyAlias keystoreProperties["keyAlias"]\n            keyPassword keystoreProperties["keyPassword"]\n            storeFile file(keystoreProperties["storeFile"])\n            storePassword keystoreProperties["storePassword"]\n        }\n    }\n\n    buildTypes {|' "$APP"
+            sed -i 's|signingConfig signingConfigs.debug|signingConfig signingConfigs.release|' "$APP"
+          fi
+          echo "----- build.gradle FIRMADO -----"; cat "$APP"
+
       - name: Dependencias
         run: flutter pub get
 
