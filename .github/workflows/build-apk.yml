@@ -64,17 +64,24 @@ jobs:
       - name: Compilar APK (release)
         run: flutter build apk --release
 
-      - name: Subir APK como artefacto
+      - name: Compilar App Bundle .aab (release) — para Play Store
+        run: flutter build appbundle --release
+
+      - name: Subir APK + AAB como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: kivox-domiciliarios-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: kivox-domiciliarios-build
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
 
-      - name: Publicar APK en un Release (descarga fácil)
+      - name: Publicar APK + AAB en un Release (descarga fácil)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: Kivox Repartidores (build ${{ github.run_number }})
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
