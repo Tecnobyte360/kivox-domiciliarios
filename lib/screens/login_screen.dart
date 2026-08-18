@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _cargando = false;
   bool _verPass = false;
   String? _error;
+  String _host = kHost; // servidor seleccionado
 
   Future<void> _entrar() async {
     final email = _emailCtrl.text.trim();
@@ -26,6 +27,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     setState(() { _cargando = true; _error = null; });
     try {
+      // 🌐 Fijar el servidor elegido antes de autenticar.
+      kHost = _host;
+      (await SharedPreferences.getInstance()).setString('kivox_host', _host);
       final data = await MovilApi.login(email, pass);
       final user = (data['user'] ?? {}) as Map<String, dynamic>;
       final perm = (user['permisos'] ?? {}) as Map<String, dynamic>;
@@ -61,7 +65,30 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Text('Kivox', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: kBrand)),
                 const SizedBox(height: 4),
                 const Text('Inicia sesión con tu usuario y clave', style: TextStyle(color: Colors.black54)),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                // 🌐 Selector de servidor (Kivox principal / Chamo Express)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(.04), borderRadius: BorderRadius.circular(14)),
+                  child: Row(children: kServidores.entries.map((e) {
+                    final on = _host == e.value;
+                    return Expanded(child: GestureDetector(
+                      onTap: () => setState(() => _host = e.value),
+                      child: Container(
+                        margin: const EdgeInsets.all(3),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: on ? kBrand : Colors.transparent,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Text(e.key, textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13,
+                            color: on ? Colors.white : Colors.black54)),
+                      ),
+                    ));
+                  }).toList()),
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,

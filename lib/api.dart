@@ -1,11 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-const String kHost = 'https://admin.kivox.co';
+/// 🌐 Servidor Kivox. Se puede cambiar en el login (Kivox principal o Chamo Express).
+///    Se carga de SharedPreferences al arrancar (ver main.dart).
+String kHost = 'https://admin.kivox.co';
+
+/// Servidores conocidos (para el selector del login).
+const Map<String, String> kServidores = {
+  'Kivox': 'https://admin.kivox.co',
+  'Chamo Express': 'https://chamoexpress.kivox.co',
+};
 
 /// ───────── API del domiciliario (portal de entregas, token por domiciliario)
 class KivoxApi {
-  static const String baseUrl = '$kHost/api/domiciliario';
+  static String get baseUrl => '$kHost/api/domiciliario';
   final String token;
   KivoxApi(this.token);
 
@@ -81,7 +89,7 @@ class KivoxApi {
 
 /// ───────── API de la app móvil (usuarios con roles/permisos: chat, etc.)
 class MovilApi {
-  static const String base = '$kHost/api/movil';
+  static String get base => '$kHost/api/movil';
   final String token; // Sanctum
   MovilApi(this.token);
 

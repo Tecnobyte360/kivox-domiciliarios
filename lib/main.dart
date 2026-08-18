@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -13,6 +14,12 @@ Future<void> _firebaseBgHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 🌐 Cargar el servidor guardado (Kivox principal o Chamo Express).
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final h = prefs.getString('kivox_host');
+    if (h != null && h.isNotEmpty) kHost = h;
+  } catch (_) {}
   try {
     await Firebase.initializeApp();
     FirebaseMessaging.onBackgroundMessage(_firebaseBgHandler);
