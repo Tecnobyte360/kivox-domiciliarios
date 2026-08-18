@@ -127,7 +127,10 @@ class _PedidosScreenState extends State<PedidosScreen> {
   Future<void> _dialogoEntrega(Map<String, dynamic> p) async {
     final codigoCtrl = TextEditingController();
     String? fotoDataUrl;
+    String? fotoEfectivoUrl;
     final picker = ImagePicker();
+    final montoEfectivo = ((p['monto_efectivo'] ?? 0) as num).toDouble();
+    final esEfectivo = montoEfectivo > 0;
 
     await showDialog(
       context: context,
@@ -156,6 +159,32 @@ class _PedidosScreenState extends State<PedidosScreen> {
                 icon: const Icon(Icons.photo_camera),
                 label: Text(fotoDataUrl == null ? 'Tomar foto de prueba (opcional)' : '✓ Foto tomada — cambiar'),
               ),
+              if (esEfectivo) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: const Color(0xFFE7F6EC), borderRadius: BorderRadius.circular(10)),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Cobras \$${montoEfectivo.toStringAsFixed(2)} en efectivo',
+                        style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF14713F))),
+                    const SizedBox(height: 2),
+                    const Text('Toma una foto de los billetes para verificarlos.', style: TextStyle(fontSize: 12.5, color: Colors.black54)),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+                      onPressed: () async {
+                        final x = await picker.pickImage(source: ImageSource.camera, imageQuality: 60, maxWidth: 1200);
+                        if (x == null) return;
+                        final bytes = await x.readAsBytes();
+                        setSt(() => fotoEfectivoUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}');
+                      },
+                      icon: Icon(fotoEfectivoUrl == null ? Icons.attach_money : Icons.check_circle,
+                          color: fotoEfectivoUrl == null ? Colors.black54 : const Color(0xFF1F9D57)),
+                      label: Text(fotoEfectivoUrl == null ? 'Tomar foto del efectivo' : '✓ Efectivo fotografiado'),
+                    ),
+                  ]),
+                ),
+              ],
             ]),
           ),
           actions: [
@@ -163,8 +192,12 @@ class _PedidosScreenState extends State<PedidosScreen> {
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.green),
               onPressed: () async {
+                if (esEfectivo && fotoEfectivoUrl == null) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Toma la foto del efectivo antes de confirmar.')));
+                  return;
+                }
                 Navigator.pop(ctx);
-                await _ejecutar(() => api.entregar(p['id'], codigo: codigoCtrl.text.trim(), foto: fotoDataUrl), '✅ Entregado');
+                await _ejecutar(() => api.entregar(p['id'], codigo: codigoCtrl.text.trim(), foto: fotoDataUrl, fotoEfectivo: fotoEfectivoUrl), '✅ Entregado');
               },
               child: const Text('Confirmar'),
             ),

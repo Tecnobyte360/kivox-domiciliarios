@@ -30,9 +30,13 @@ class KivoxApi {
     if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo iniciar la ruta.');
   }
 
-  Future<void> entregar(int pedidoId, {String? codigo, String? foto}) async {
+  Future<void> entregar(int pedidoId, {String? codigo, String? foto, String? fotoEfectivo}) async {
     final r = await http.post(Uri.parse('$baseUrl/pedidos/$pedidoId/entregar'), headers: _headers,
-        body: jsonEncode({if (codigo != null) 'codigo': codigo, if (foto != null) 'foto': foto}))
+        body: jsonEncode({
+          if (codigo != null) 'codigo': codigo,
+          if (foto != null) 'foto': foto,
+          if (fotoEfectivo != null) 'foto_efectivo': fotoEfectivo,
+        }))
         .timeout(const Duration(seconds: 60));
     final d = jsonDecode(r.body);
     if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo marcar como entregado.');
