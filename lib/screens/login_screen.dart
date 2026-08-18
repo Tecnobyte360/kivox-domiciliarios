@@ -37,6 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await prefs.setBool('perm_pedidos', perm['pedidos'] == true);
       await prefs.setBool('es_domiciliario', user['es_domiciliario'] == true);
       await prefs.setString('domiciliario_token', (user['domiciliario_token'] ?? '').toString());
+      await prefs.setBool('usa_billeteras', user['usa_billeteras'] == true);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (e) {

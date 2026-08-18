@@ -7,6 +7,7 @@ import '../main.dart';
 import 'login_screen.dart';
 import 'chat_list_screen.dart';
 import 'pedidos_screen.dart';
+import 'billetera_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _negocio = '';
   bool _permChat = false;
   bool _esDomi = false;
+  bool _usaBilleteras = false;
   String _movilToken = '';
   String _domiToken = '';
   bool _cargando = true;
@@ -38,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _esDomi = p.getBool('es_domiciliario') ?? false;
       _movilToken = p.getString('movil_token') ?? '';
       _domiToken = p.getString('domiciliario_token') ?? '';
+      _usaBilleteras = p.getBool('usa_billeteras') ?? false;
       _cargando = false;
     });
     _registrarPush();
@@ -86,6 +89,15 @@ class _HomeScreenState extends State<HomeScreen> {
         sub: 'Pedidos asignados y ruta',
         color: const Color(0xFF3B82F6),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PedidosScreen(token: _domiToken))),
+      ));
+    }
+    if (_esDomi && _domiToken.isNotEmpty && _usaBilleteras) {
+      modulos.add(_card(
+        icon: Icons.account_balance_wallet,
+        titulo: 'Mi billetera',
+        sub: 'Efectivo y devoluciones',
+        color: const Color(0xFF2E9E5B),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BilleteraScreen(token: _domiToken))),
       ));
     }
 

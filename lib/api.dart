@@ -52,6 +52,26 @@ class KivoxApi {
           .timeout(const Duration(seconds: 15));
     } catch (_) {}
   }
+
+  /// 💰 Billetera de efectivo: saldo, tope, días, bloqueo y desglose por aliado.
+  Future<Map<String, dynamic>> billetera() async {
+    final r = await http.get(Uri.parse('$baseUrl/billetera'), headers: _headers)
+        .timeout(const Duration(seconds: 20));
+    final d = jsonDecode(r.body);
+    if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo cargar la billetera.');
+    return Map<String, dynamic>.from(d);
+  }
+
+  /// 💵 Registra una devolución de efectivo al aliado (queda pendiente de confirmar).
+  /// [foto] es un data URL "data:image/jpeg;base64,....".
+  Future<void> registrarDevolucion({required int aliadoId, required double monto, required String foto}) async {
+    final r = await http.post(Uri.parse('$baseUrl/billetera/devolucion'),
+        headers: _headers,
+        body: jsonEncode({'aliado_id': aliadoId, 'monto': monto, 'foto': foto}))
+        .timeout(const Duration(seconds: 30));
+    final d = jsonDecode(r.body);
+    if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo registrar la devolución.');
+  }
 }
 
 /// ───────── API de la app móvil (usuarios con roles/permisos: chat, etc.)
