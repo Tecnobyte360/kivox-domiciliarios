@@ -68,13 +68,14 @@ class KivoxApi {
 
   /// 💵 Registra una devolución de efectivo al aliado (queda pendiente de confirmar).
   /// [foto] es un data URL "data:image/jpeg;base64,....".
-  Future<void> registrarDevolucion({required int aliadoId, required double monto, required String foto}) async {
+  Future<Map<String, dynamic>> registrarDevolucion({required int aliadoId, required double monto, required String foto}) async {
     final r = await http.post(Uri.parse('$baseUrl/billetera/devolucion'),
         headers: _headers,
         body: jsonEncode({'aliado_id': aliadoId, 'monto': monto, 'foto': foto}))
         .timeout(const Duration(seconds: 30));
     final d = jsonDecode(r.body);
     if (!(r.statusCode == 200 && d['ok'] == true)) throw Exception(d['message'] ?? 'No se pudo registrar la devolución.');
+    return Map<String, dynamic>.from(d);
   }
 }
 

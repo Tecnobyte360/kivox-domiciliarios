@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api.dart';
 import '../main.dart';
@@ -208,7 +209,23 @@ class _DevolucionSheetState extends State<_DevolucionSheet> {
     if (_fotoDataUrl == null) { setState(() => _error = 'Toma la foto del efectivo entregado.'); return; }
     setState(() { _enviando = true; _error = null; });
     try {
-      await widget.api.registrarDevolucion(aliadoId: widget.aliadoId, monto: monto, foto: _fotoDataUrl!);
+      final resp = await widget.api.registrarDevolucion(aliadoId: widget.aliadoId, monto: monto, foto: _fotoDataUrl!);
+      final url = (resp['confirm_url'] ?? '').toString();
+      if (!mounted) return;
+      if (url.isNotEmpty) {
+        await showDialog(context: context, builder: (ctx) => AlertDialog(
+          title: const Text('Muéstrale esto al aliado'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Que el aliado abra este link y confirme que recibió el efectivo:', style: TextStyle(fontSize: 13.5)),
+            const SizedBox(height: 10),
+            SelectableText(url, style: const TextStyle(fontSize: 12, color: kBrandDark)),
+          ]),
+          actions: [
+            TextButton(onPressed: () { Clipboard.setData(ClipboardData(text: url)); }, child: const Text('Copiar link')),
+            FilledButton(style: FilledButton.styleFrom(backgroundColor: kBrand), onPressed: () => Navigator.pop(ctx), child: const Text('Listo')),
+          ],
+        ));
+      }
       if (mounted) widget.onDone();
     } catch (e) {
       setState(() { _error = e.toString().replaceFirst('Exception: ', ''); _enviando = false; });
